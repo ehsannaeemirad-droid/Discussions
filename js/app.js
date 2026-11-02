@@ -1,6 +1,5 @@
 /**
- * Fashion — Speaking & Reading
- * Vanilla JS SPA with hash routing
+ * Speaking & Reading — Vanilla JS SPA with hash routing
  */
 (function () {
   "use strict";
@@ -17,7 +16,6 @@
 
   const $ = (sel, ctx = document) => ctx.querySelector(sel);
   const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
-
   const sidebar = $("#sidebar");
   const main = $("#main");
   const overlay = $("#sidebar-overlay");
@@ -33,27 +31,21 @@
         : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
     }
   }
-
   function toggleTheme() {
     state.theme = state.theme === "dark" ? "light" : "dark";
     applyTheme();
   }
-
   function parseHash() {
-    const hash = location.hash.slice(1) || "/";
-    return hash.split("/").filter(Boolean);
+    return (location.hash.slice(1) || "/").split("/").filter(Boolean);
   }
-
   function navigate(path) {
     location.hash = path.startsWith("#") ? path : "#" + path;
   }
-
   function handleRoute() {
     const parts = parseHash();
     closeSidebar();
     if (parts.length === 0) { renderHome(); return; }
-    const topicId = parts[0];
-    const topic = (window.TOPICS || []).find(t => t.id === topicId);
+    const topic = (window.TOPICS || []).find(t => t.id === parts[0]);
     if (!topic) { renderHome(); return; }
     state.topic = topic;
     if (parts[1] === "speaking") {
@@ -73,7 +65,25 @@
     }
     renderHome();
   }
-
+  function getSpeakingData() {
+    const key = (state.topic && state.topic.speakingKey) || "FASHION_SPEAKING";
+    const data = window[key];
+    if (!data) return [];
+    return ({ A: data.partA, B: data.partB, C: data.partC })[state.part] || [];
+  }
+  function getReadingData() {
+    const key = (state.topic && state.topic.readingKey) || "FASHION_READING";
+    return window[key] || [];
+  }
+  function getAvailableParts() {
+    const key = (state.topic && state.topic.speakingKey) || "FASHION_SPEAKING";
+    const data = window[key] || {};
+    const parts = [];
+    if (data.partA && data.partA.length) parts.push({ id: "A", slug: "part-a", label: "Part A" });
+    if (data.partB && data.partB.length) parts.push({ id: "B", slug: "part-b", label: "Part B" });
+    if (data.partC && data.partC.length) parts.push({ id: "C", slug: "part-c", label: "Part C" });
+    return parts;
+  }
   function renderSidebar() {
     const topic = state.topic;
     const isSpeaking = state.section === "speaking";
@@ -86,97 +96,51 @@
           <div class="sidebar-topic-title">${escapeHtml(topic.title)}</div>
         </div>
         <nav class="sidebar-nav" aria-label="Section navigation">
-          <a href="#/${topic.id}/speaking/part-a/1" class="nav-item ${isSpeaking ? "active" : ""}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-            Speaking
-          </a>
-          ${isSpeaking ? `
-            <div class="nav-sub">
-              <a href="#/${topic.id}/speaking/part-a/1" class="nav-sub-item ${state.part === "A" ? "active" : ""}">Part A — Personal</a>
-              <a href="#/${topic.id}/speaking/part-b/1" class="nav-sub-item ${state.part === "B" ? "active" : ""}">Part B — Opinions</a>
-              <a href="#/${topic.id}/speaking/part-c/1" class="nav-sub-item ${state.part === "C" ? "active" : ""}">Part C — Challenging</a>
-            </div>
-          ` : ""}
-          <a href="#/${topic.id}/reading" class="nav-item ${isReading ? "active" : ""}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            Reading
-          </a>
-        </nav>
-      `;
+          <a href="#/${topic.id}/speaking/part-a/1" class="nav-item ${isSpeaking ? "active" : ""}">Speaking</a>
+          ${isSpeaking ? `<div class="nav-sub">${getAvailableParts().map(pt => `
+            <a href="#/${topic.id}/speaking/${pt.slug}/1" class="nav-sub-item ${state.part === pt.id ? "active" : ""}">${pt.label}</a>`).join("")}</div>` : ""}
+          <a href="#/${topic.id}/reading" class="nav-item ${isReading ? "active" : ""}">Reading</a>
+        </nav>`;
     }
     sidebar.innerHTML = `
       <div class="sidebar-header">
-        <a href="#/" class="app-logo">
-          <span class="logo-mark">F</span>
-          <span class="logo-text">Fashion</span>
-        </a>
+        <a href="#/" class="app-logo"><span class="logo-mark">SR</span><span class="logo-text">Speaking & Reading</span></a>
         <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle theme"></button>
       </div>
       ${navHtml}
-      <div class="sidebar-footer">
-        <a href="#/" class="nav-item">← All topics</a>
-      </div>
-    `;
+      <div class="sidebar-footer"><a href="#/" class="nav-item">\u2190 All topics</a></div>`;
     applyTheme();
     $("#theme-toggle")?.addEventListener("click", toggleTheme);
   }
-
   function openSidebar() {
-    sidebar.classList.add("open");
-    overlay.classList.add("visible");
-    document.body.classList.add("sidebar-open");
+    sidebar.classList.add("open"); overlay.classList.add("visible"); document.body.classList.add("sidebar-open");
   }
-
   function closeSidebar() {
-    sidebar.classList.remove("open");
-    overlay.classList.remove("visible");
-    document.body.classList.remove("sidebar-open");
+    sidebar.classList.remove("open"); overlay.classList.remove("visible"); document.body.classList.remove("sidebar-open");
   }
-
   function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+    const div = document.createElement("div"); div.textContent = str; return div.innerHTML;
   }
-
   function highlightChunks(text, chunks) {
     const sorted = [...chunks].sort((a, b) => b.term.length - a.term.length);
     return text.replace(/\*\*(.+?)\*\*/g, (match, term) => {
-      const chunk = sorted.find(c =>
-        c.term.toLowerCase() === term.toLowerCase() ||
-        term.toLowerCase().includes(c.term.toLowerCase()) ||
-        c.term.toLowerCase().includes(term.toLowerCase())
-      );
-      const safeTerm = escapeHtml(term);
-      if (chunk) {
-        const tip = escapeHtml(`${chunk.def} — ${chunk.fa}`);
-        return `<mark class="chunk" data-tip="${tip}" tabindex="0">${safeTerm}</mark>`;
-      }
-      return `<mark class="chunk">${safeTerm}</mark>`;
+      const chunk = sorted.find(c => c.term.toLowerCase() === term.toLowerCase() || term.toLowerCase().includes(c.term.toLowerCase()) || c.term.toLowerCase().includes(term.toLowerCase()));
+      const safe = escapeHtml(term);
+      if (chunk) return `<mark class="chunk" data-tip="${escapeHtml(chunk.def + " \u2014 " + chunk.fa)}" tabindex="0">${safe}</mark>`;
+      return `<mark class="chunk">${safe}</mark>`;
     });
   }
-
-  function getSpeakingData() {
-    const data = window.FASHION_SPEAKING;
-    if (!data) return [];
-    return ({ A: data.partA, B: data.partB, C: data.partC })[state.part] || [];
-  }
-
   function saveProgress() {
-    if (state.section === "speaking" && state.topic) {
+    if (state.section === "speaking" && state.topic)
       localStorage.setItem(`progress:${state.topic.id}:speaking:${state.part}`, String(state.questionIndex));
-    }
   }
-
   function renderHome() {
-    state.topic = null;
-    state.section = null;
-    renderSidebar();
+    state.topic = null; state.section = null; renderSidebar();
     const topics = window.TOPICS || [];
     main.innerHTML = `
       <div class="home fade-in">
         <header class="hero">
-          <h1>Fashion — Speaking & Reading</h1>
+          <h1>Speaking & Reading</h1>
           <p class="hero-sub">English practice for intermediate learners. Build fluency with real sample answers and key phrases.</p>
         </header>
         <div class="topic-grid">
@@ -188,18 +152,15 @@
                 <a href="#/${t.id}/speaking/part-a/1" class="btn btn-primary">Speaking</a>
                 <a href="#/${t.id}/reading" class="btn btn-secondary">Reading</a>
               </div>
-            </article>
-          `).join("")}
+            </article>`).join("")}
         </div>
-      </div>
-    `;
+      </div>`;
   }
-
   function renderSpeaking() {
     renderSidebar();
     const questions = getSpeakingData();
     if (!questions.length) {
-      main.innerHTML = `<div class="empty">No questions found. Speaking data may still be loading.</div>`;
+      main.innerHTML = `<div class="empty">No questions found.</div>`;
       return;
     }
     if (state.questionIndex >= questions.length) state.questionIndex = questions.length - 1;
@@ -213,9 +174,8 @@
     main.innerHTML = `
       <div class="speaking-view fade-in">
         <div class="part-pills" role="tablist">
-          <a href="#/${topicId}/speaking/part-a/1" class="pill ${state.part === "A" ? "active" : ""}">Part A</a>
-          <a href="#/${topicId}/speaking/part-b/1" class="pill ${state.part === "B" ? "active" : ""}">Part B</a>
-          <a href="#/${topicId}/speaking/part-c/1" class="pill ${state.part === "C" ? "active" : ""}">Part C</a>
+          ${getAvailableParts().map(pt => `
+            <a href="#/${topicId}/speaking/${pt.slug}/1" class="pill ${state.part === pt.id ? "active" : ""}">${pt.label}</a>`).join("")}
         </div>
         <div class="progress-row">
           <span class="progress-label">Question ${state.questionIndex + 1} of ${total}</span>
@@ -243,21 +203,18 @@
                   <div class="phrase-term">${escapeHtml(c.term)}</div>
                   <div class="phrase-def">${escapeHtml(c.def)}</div>
                   <div class="phrase-fa" dir="rtl" lang="fa">${escapeHtml(c.fa)}</div>
-                </div>
-              `).join("")}
+                </div>`).join("")}
             </div>
           </section>
         </div>
-        <nav class="nav-controls" aria-label="Question navigation">
-          <button id="prev-btn" class="btn btn-secondary" type="button" ${state.questionIndex === 0 ? "disabled" : ""}>← Previous</button>
-          <button id="next-btn" class="btn btn-secondary" type="button" ${state.questionIndex >= total - 1 ? "disabled" : ""}>Next →</button>
+        <nav class="nav-controls">
+          <button id="prev-btn" class="btn btn-secondary" type="button" ${state.questionIndex === 0 ? "disabled" : ""}>\u2190 Previous</button>
+          <button id="next-btn" class="btn btn-secondary" type="button" ${state.questionIndex >= total - 1 ? "disabled" : ""}>Next \u2192</button>
         </nav>
-      </div>
-    `;
+      </div>`;
     $("#reveal-btn")?.addEventListener("click", () => {
       state.answerVisible = true;
-      const panel = $("#answer-panel");
-      const btn = $("#reveal-btn");
+      const panel = $("#answer-panel"); const btn = $("#reveal-btn");
       if (panel) { panel.hidden = false; panel.classList.add("visible"); }
       if (btn) btn.hidden = true;
     });
@@ -269,21 +226,16 @@
     });
     initChunkTooltips();
   }
-
   function initChunkTooltips() {
     const marks = $$("mark.chunk[data-tip]");
     let tipEl = $("#chunk-tooltip");
     if (!tipEl) {
       tipEl = document.createElement("div");
-      tipEl.id = "chunk-tooltip";
-      tipEl.className = "chunk-tooltip";
-      tipEl.setAttribute("role", "tooltip");
+      tipEl.id = "chunk-tooltip"; tipEl.className = "chunk-tooltip"; tipEl.setAttribute("role", "tooltip");
       document.body.appendChild(tipEl);
     }
     function showTip(el) {
-      const text = el.getAttribute("data-tip");
-      if (!text) return;
-      tipEl.textContent = text;
+      tipEl.textContent = el.getAttribute("data-tip") || "";
       tipEl.classList.add("visible");
       const rect = el.getBoundingClientRect();
       const tipRect = tipEl.getBoundingClientRect();
@@ -292,8 +244,7 @@
       if (left < 8) left = 8;
       if (left + tipRect.width > window.innerWidth - 8) left = window.innerWidth - tipRect.width - 8;
       if (top < 8) top = rect.bottom + 8;
-      tipEl.style.left = left + "px";
-      tipEl.style.top = top + "px";
+      tipEl.style.left = left + "px"; tipEl.style.top = top + "px";
     }
     function hideTip() { tipEl.classList.remove("visible"); }
     marks.forEach(m => {
@@ -301,42 +252,33 @@
       m.addEventListener("mouseleave", hideTip);
       m.addEventListener("focus", () => showTip(m));
       m.addEventListener("blur", hideTip);
-      m.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (tipEl.classList.contains("visible")) hideTip();
-        else showTip(m);
-      });
+      m.addEventListener("click", e => { e.stopPropagation(); tipEl.classList.contains("visible") ? hideTip() : showTip(m); });
     });
     document.addEventListener("click", hideTip);
   }
-
   function renderReadingList() {
     renderSidebar();
-    const articles = window.FASHION_READING || [];
+    const articles = getReadingData();
     const topicId = state.topic.id;
     main.innerHTML = `
       <div class="reading-list fade-in">
         <header class="page-header">
           <h1>Reading</h1>
-          <p class="page-sub">Two articles on fashion, sustainability, and consumer culture.</p>
+          <p class="page-sub">Articles with vocabulary and discussion questions.</p>
         </header>
         <div class="article-list">
           ${articles.map(a => `
             <a href="#/${topicId}/reading/${a.id}" class="article-card">
               <h2>${escapeHtml(a.title)}</h2>
               <p>${escapeHtml(a.subtitle)}</p>
-              <span class="article-meta">${a.paragraphs.length} paragraphs · ${a.vocabulary.length} vocab · ${a.discussion.length} discussion</span>
-            </a>
-          `).join("")}
+              <span class="article-meta">${a.paragraphs.length} paragraphs \u00b7 ${a.vocabulary.length} vocab \u00b7 ${a.discussion.length} discussion</span>
+            </a>`).join("")}
         </div>
-      </div>
-    `;
+      </div>`;
   }
-
   function renderArticle() {
     renderSidebar();
-    const articles = window.FASHION_READING || [];
-    const article = articles.find(a => a.id === state.articleId);
+    const article = getReadingData().find(a => a.id === state.articleId);
     if (!article) {
       main.innerHTML = `<div class="empty">Article not found. <a href="#/${state.topic.id}/reading">Back to list</a></div>`;
       return;
@@ -344,7 +286,7 @@
     const topicId = state.topic.id;
     main.innerHTML = `
       <div class="article-view fade-in">
-        <a href="#/${topicId}/reading" class="back-link">← Back to reading list</a>
+        <a href="#/${topicId}/reading" class="back-link">\u2190 Back to reading list</a>
         <header class="article-header">
           <h1>${escapeHtml(article.title)}</h1>
           <p class="article-subtitle">${escapeHtml(article.subtitle)}</p>
@@ -353,10 +295,9 @@
           ${article.paragraphs.map((p, i) => `
             <div class="para-block" data-idx="${i}">
               <p class="para-en">${escapeHtml(p.en)}</p>
-              <button type="button" class="fa-toggle" aria-expanded="false" data-idx="${i}">فارسی</button>
+              <button type="button" class="fa-toggle" aria-expanded="false" data-idx="${i}">\u0641\u0627\u0631\u0633\u06cc</button>
               <p class="para-fa" dir="rtl" lang="fa" hidden>${escapeHtml(p.fa)}</p>
-            </div>
-          `).join("")}
+            </div>`).join("")}
         </div>
         <section class="vocab-section">
           <h2 class="section-title">Vocabulary</h2>
@@ -366,8 +307,7 @@
                 <div class="vocab-term">${escapeHtml(v.term)}</div>
                 <div class="vocab-def">${escapeHtml(v.def)}</div>
                 <div class="vocab-fa" dir="rtl" lang="fa">${escapeHtml(v.fa)}</div>
-              </div>
-            `).join("")}
+              </div>`).join("")}
           </div>
         </section>
         <section class="discussion-section">
@@ -377,12 +317,10 @@
               <div class="discussion-card">
                 <span class="discussion-num">${i + 1}</span>
                 <p>${escapeHtml(q)}</p>
-              </div>
-            `).join("")}
+              </div>`).join("")}
           </div>
         </section>
-      </div>
-    `;
+      </div>`;
     $$(".fa-toggle").forEach(btn => {
       btn.addEventListener("click", () => {
         const idx = btn.getAttribute("data-idx");
@@ -396,7 +334,6 @@
       });
     });
   }
-
   function onKeydown(e) {
     if (state.section !== "speaking") return;
     if (e.target.matches("input, textarea, button, a")) return;
@@ -407,7 +344,6 @@
       if (!state.answerVisible) $("#reveal-btn")?.click();
     }
   }
-
   function init() {
     applyTheme();
     $("#menu-btn")?.addEventListener("click", openSidebar);
@@ -416,10 +352,6 @@
     document.addEventListener("keydown", onKeydown);
     handleRoute();
   }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
 })();
