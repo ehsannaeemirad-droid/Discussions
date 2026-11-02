@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Fashion — Speaking & Reading. English practice for intermediate learners." />
+  <title>Fashion — Speaking & Reading</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="mobile-bar">
+    <button id="menu-btn" class="icon-btn" type="button" aria-label="Open menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <a href="#/" class="app-logo">
+      <span class="logo-mark">F</span>
+      <span class="logo-text">Fashion</span>
+    </a>
+  </div>
+
+  <div id="sidebar-overlay" aria-hidden="true"></div>
+
+  <div id="app">
+    <aside id="sidebar" aria-label="Sidebar navigation"></aside>
+    <main id="main" role="main"></main>
+  </div>
+
+  <!-- Data (window globals — works from file:// and GitHub Pages) -->
+  <script src="js/data/topics.js"></script>
+  <script src="js/data/fashion-speaking.js"></script>
+  <script src="js/data/fashion-reading.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
